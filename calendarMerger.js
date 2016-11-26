@@ -3,6 +3,7 @@
 var consolidatedCalendar = CalendarApp.getCalendarById("0s6n1i40gorq5m4uad57ec0d5c@group.calendar.google.com");
 var crnCalendar = CalendarApp.getCalendarById("1cs29j3n6ebb3n8d4pa98flhoc@group.calendar.google.com");
 var rbmCalendar = CalendarApp.getCalendarById("7l3qtj8h2dud0jthrmm4cp6hss@group.calendar.google.com");
+var apiCallCount = 0;
 
 function addDay(date, days){  
   var newDate = new Date( date.getTime() + days * 86400000 );
@@ -18,12 +19,21 @@ function goThroughTheWeek(){
   agendaDay.setMilliseconds(0);
   
   for(var i = 0;i<7;i++){
-    mergeCalendars(addDay(agendaDay,i));
-    Utilities.sleep(3000); // avoid google's api restrictions
+    mergeCalendars(addDay(agendaDay,i));    
+  }
+}
+
+function registerApiCall(){
+  apiCallCount++;
+  if(apiCallCount >= 20){
+    Logger.log("Sleeping a bit to give Google a rest");
+    Utilities.sleep(10000); // avoid google's api restrictions
+    apiCallCount = 0;
   }
 }
 
 function copyFromCrn(startTime, endTime){
+  registerApiCall();
   if(startTime > endTime){
     Logger.log("Invalid interval for "+startTime+" and "+endTime);
     return;
@@ -54,6 +64,7 @@ function mergeCalendars(agendaDay) {
   // cleaning up consolidated calendar  
   var consolidatedEvents = consolidatedCalendar.getEventsForDay(agendaDay);
   for (var i = 0; i < consolidatedEvents.length; i++) {
+    registerApiCall();
     consolidatedEvents[i].deleteEvent();    
   }
   
@@ -74,8 +85,9 @@ function mergeCalendars(agendaDay) {
       finishTime = rbmEvents[i+1].getStartTime();               
     }
     
-    copyFromCrn(startFreeTime, finishTime);
     
+    copyFromCrn(startFreeTime, finishTime);    
+    registerApiCall();
     consolidatedCalendar.createEvent(event.getTitle(), event.getStartTime(), event.getEndTime());
   }
   
