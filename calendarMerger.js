@@ -19,10 +19,16 @@ function goThroughTheWeek(){
   
   for(var i = 0;i<7;i++){
     mergeCalendars(addDay(agendaDay,i));
+    Utilities.sleep(3000); // avoid google's api restrictions
   }
 }
 
-function copyFromCrn(description, startTime, endTime){
+function copyFromCrn(startTime, endTime){
+  if(startTime > endTime){
+    Logger.log("Invalid interval for "+startTime+" and "+endTime);
+    return;
+  }
+  
   var crnEvents = crnCalendar.getEvents(startTime, endTime);
   for(i = 0;i<crnEvents.length;i++){
     var crnEvent = crnEvents[i];
@@ -35,13 +41,15 @@ function copyFromCrn(description, startTime, endTime){
     if(finishTime > endTime){
       finishTime = endTime;
     }
-    consolidatedCalendar.createEvent("CRN: "+crnEvent.getTitle(), eventStartTime , finishTime);
+    
+    consolidatedCalendar.createEvent(crnEvent.getTitle(), eventStartTime , finishTime);
+    
   }
 }
 
 // Copies everything from RMB, find the free gaps and then fill them with CRN programs (sometimes partialy)
 function mergeCalendars(agendaDay) {
-  var rbmCalendar = CalendarApp.getCalendarById("7l3qtj8h2dud0jthrmm4cp6hss@group.calendar.google.com");
+  Logger.log("Cloning events from RMB for "+agendaDay);
   
   // cleaning up consolidated calendar  
   var consolidatedEvents = consolidatedCalendar.getEventsForDay(agendaDay);
@@ -49,16 +57,14 @@ function mergeCalendars(agendaDay) {
     consolidatedEvents[i].deleteEvent();    
   }
   
-  
   var rbmEvents = rbmCalendar.getEventsForDay(agendaDay);
   
-  Logger.log("Cloning events from RMB...");
   for (var i = 0; i < rbmEvents.length; i++) {
     var event = rbmEvents[i];
     var startFreeTime;
     var finishTime;
     if(i == 0){
-      copyFromCrn("First CRN Program", agendaDay, event.getStartTime());
+      copyFromCrn(agendaDay, event.getStartTime());
       
     }     
     startFreeTime = event.getEndTime();
@@ -68,7 +74,7 @@ function mergeCalendars(agendaDay) {
       finishTime = rbmEvents[i+1].getStartTime();               
     }
     
-    copyFromCrn("CRN Program "+i, startFreeTime, finishTime);
+    copyFromCrn(startFreeTime, finishTime);
     
     consolidatedCalendar.createEvent(event.getTitle(), event.getStartTime(), event.getEndTime());
   }
