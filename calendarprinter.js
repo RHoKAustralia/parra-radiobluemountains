@@ -267,7 +267,7 @@ function addDay(date, days){
 }
 
 function goThroughTheWeek(){
-  
+  initialize();
   var agendaDay = new Date();
   agendaDay.setHours(0);
   agendaDay.setMinutes(0);
