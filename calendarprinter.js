@@ -1,13 +1,3 @@
-var consolidatedCalendar = CalendarApp.getCalendarById("lvgac2dkit0n96ttb2a24dttrs@group.calendar.google.com");
-var rbmCalendar = CalendarApp.getCalendarById("7l3qtj8h2dud0jthrmm4cp6hss@group.calendar.google.com");
-
-var apiCallCount = 0;
-
-var calendarName = "Imported CRN program guide";
-
-var DAYLIGHT_SAVING = 1;
-var DEBUG = false;
-
 /**
 * A special function that runs when the spreadsheet is open, used to add a
 * custom menu to the spreadsheet.
@@ -15,13 +5,35 @@ var DEBUG = false;
 function onOpen() {
   var spreadsheet = SpreadsheetApp.getActive();
   var menuItems = [
-    {name: 'Export as Calendar and merge', functionName: 'exportCalendar'},
-    {name: 'Merge CRN Calendar', functionName: 'goThroughTheWeek' }
-    //{name: 'Log date...', functionName: 'logDate'}
-    //    {name: 'Show link...', functionName: 'showLink'}
+    {name: 'Export as Calendar', functionName: 'exportCalendar'},
+    {name: 'Merge CRN Calendar', functionName: 'goThroughTheWeek' }    
   ];
-  spreadsheet.addMenu('Radio Program', menuItems);
+  spreadsheet.addMenu("Radio program", menuItems);  
 }
+
+
+function doGet(){
+  exportCalendar();
+  return ContentService.createTextOutput('Yay! Calendar exported!');
+}
+
+function initialize(){
+  
+  if(!consolidatedCalendar)
+    consolidatedCalendar = CalendarApp.getCalendarById("lvgac2dkit0n96ttb2a24dttrs@group.calendar.google.com");
+  if(!rbmCalendar)
+    rbmCalendar = CalendarApp.getCalendarById("7l3qtj8h2dud0jthrmm4cp6hss@group.calendar.google.com");
+}
+
+var consolidatedCalendar = undefined;
+var rbmCalendar = undefined;
+
+var apiCallCount = 0;
+
+var calendarName = "Imported CRN program guide";
+
+var DAYLIGHT_SAVING = 1;
+var DEBUG = false;
 
 function getCrnCalendar(){      
   // DROP AND RECREATE THE CALENDAR  
@@ -57,6 +69,7 @@ function showLink() {
 }
 
 function exportCalendar() {
+  initialize();
   var sheet = SpreadsheetApp.getActiveSheet();
   var programEvents = [];
   
@@ -221,13 +234,13 @@ function exportCalendar() {
 }
 
 function createProgramEvent(calendar, startTime, endTime, programName) {
+  registerApiCall();
   // Creates an event.
   var options = {}; //      {location: 'The Moon'}
   var event = calendar.createEvent(programName,
                                    startTime,
                                    endTime, 
-                                   options);
-  Utilities.sleep(200);// pause in the loop for 200 milliseconds  
+                                   options);  
 }
 
 function convertDate(d) {
@@ -245,10 +258,6 @@ function convertDate(d) {
     d.setMinutes(m);
   }
   return d;
-}
-
-function log2() {
-  Logger.log(convertDate("12:04\n"));
 }
 
 
@@ -297,8 +306,7 @@ function copyFromCrn(startTime, endTime){
     }
     if(finishTime > endTime){
       finishTime = endTime;
-    }
-    
+    }    
     consolidatedCalendar.createEvent(crnEvent.getTitle(), eventStartTime , finishTime);
     
   }
@@ -316,6 +324,10 @@ function mergeCalendars(agendaDay) {
   }
   
   var rbmEvents = rbmCalendar.getEventsForDay(agendaDay);
+  
+  if(rbmEvents.length == 0){
+    copyFromCrn(agendaDay,addDay(agendaDay, 1));
+  }
   
   for (var i = 0; i < rbmEvents.length; i++) {
     var event = rbmEvents[i];
