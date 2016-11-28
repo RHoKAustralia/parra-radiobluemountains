@@ -347,7 +347,9 @@ function mergeCalendars(agendaDay) {
     
     copyFromCrn(startFreeTime, finishTime);    
     registerApiCall();
-    consolidatedCalendar.createEvent(event.getTitle(), event.getStartTime(), event.getEndTime());
+    consolidatedCalendar.createEvent(event.getTitle(), event.getStartTime(), event.getEndTime(),
+                                     {location: event.getLocation(),
+                                      description: event.getDescription()});
   }
   
 }
